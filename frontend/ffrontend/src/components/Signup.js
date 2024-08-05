@@ -1,7 +1,7 @@
 // src/Signup.js
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { setToken } from './auth';
+import { setToken } from '../utils/auth';
 
 const Signup = () => {
     const navigate = useNavigate();
@@ -24,7 +24,7 @@ const Signup = () => {
         e.preventDefault();
         try {
             console.log('Sending request:', formData); // Log the request data
-            const response = await fetch('http://localhost:5000/signup', {
+            const response = await fetch('http://localhost:5000/auth/signup', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

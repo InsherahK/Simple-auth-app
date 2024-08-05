@@ -1,10 +1,10 @@
 // src/App.js
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import Login from './Login';
-import Signup from './Signup';
-import HomePage from './HomePage';
-import './Styles.css';  // Import the CSS file
+import Login from './components/Login';
+import Signup from './components/Signup';
+import HomePage from './components/HomePage';
+import './styles/Styles.css';  // Import the CSS file
 
 function App() {
     return (
