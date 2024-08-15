@@ -4,7 +4,8 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Login from './components/Login';
 import Signup from './components/Signup';
 import HomePage from './components/HomePage';
-import './styles/Styles.css';  // Import the CSS file
+import './styles/Styles.css';  
+
 
 function App() {
     return (

@@ -9,10 +9,9 @@ const Login = () => {
     const [user, setUser] = useState(null);
     const [users, setUsers] = useState([]);
     const [editMode, setEditMode] = useState(null); // Track the user being edited
-    const [formData, setFormData] = useState({ username: '', email: '', password: '', currentPassword: '' });
+    const [formData, setFormData] = useState({ username: '', email: '', password: '', currentPassword: '', profileImage: null });
     const navigate = useNavigate();  // Hook for navigation
     const [showPopup, setShowPopup] = useState(false);
-
 
     // Handle login
     const handleLogin = async (e) => {
@@ -35,10 +34,8 @@ const Login = () => {
                 const response = await axios.get('http://localhost:5000/users', {
                     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
                 });
-                console.log('Fetched users:', response.data); // Debugging line
                 setUsers(response.data);
             } catch (err) {
-                console.error('Error fetching users:', err); // Debugging line
                 setError('Failed to fetch users.');
             }
         };
@@ -59,21 +56,49 @@ const Login = () => {
             username: user.username,
             email: user.email,
             password: '',  // Reset password field
-            currentPassword: ''
+            currentPassword: '',
+            profileImage: null // Reset profileImage field
         });
-
         setShowPopup(true); 
     };
 
     const closePopup = () => {
         setShowPopup(false);
         setEditMode(null);
-        setFormData({ username: '', email: '', password: '', currentPassword: '' }); // Clear form fields
+        setFormData({ username: '', email: '', password: '', currentPassword: '', profileImage: null }); // Clear form fields
     };
     
     // Handle form changes
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    // Handle file change
+    const handleFileChange = (e) => {
+        setFormData({ ...formData, profileImage: e.target.files[0] });
+    };
+
+    // Handle profile image upload
+    const handleImageUpload = async () => {
+        if (!formData.profileImage) {
+            setError('No image selected.');
+            return;
+        }
+        
+        const imageData = new FormData();
+        imageData.append('profileImage', formData.profileImage);
+
+        try {
+            await axios.post('http://localhost:5000/users/me/profile-image', imageData, {
+                headers: { 
+                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+            alert('Profile image uploaded successfully.');
+        } catch (err) {
+            setError('Failed to upload profile image.');
+        }
     };
 
     // Handle profile update
@@ -93,16 +118,26 @@ const Login = () => {
             updateData.password = formData.password;
         }
 
+        // Create FormData object for file uploads
+        const formDataObj = new FormData();
+        Object.keys(updateData).forEach(key => formDataObj.append(key, updateData[key]));
+        if (formData.profileImage) {
+            formDataObj.append('profileImage', formData.profileImage);
+        }
+
         // Admins should not be able to set passwords
         if (user.role === 'admin') {
-            delete updateData.password;
+            formDataObj.delete('password');
         }
     
         const url = user.role === 'admin' ? `http://localhost:5000/users/${editMode}` : `http://localhost:5000/users/me`;
     
         try {
-            await axios.put(url, updateData, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            await axios.put(url, formDataObj, {
+                headers: { 
+                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'multipart/form-data'
+                }
             });
             if (user.role === 'admin') {
                 setUsers(users.map(u => u.user_id === editMode ? { ...u, ...updateData } : u));
@@ -113,8 +148,6 @@ const Login = () => {
             closePopup(); // Close the popup
             setError('');
             setEditMode(null);
-            setFormData({ username: '', email: '', password: '', currentPassword: '' }); // Clear form fields
-            setError('');
             alert('Profile updated successfully.');
         } catch (err) {
             setError('Failed to update profile.');
@@ -188,6 +221,15 @@ const Login = () => {
                         <div>
                             <h3>My Profile</h3>
                             <button onClick={() => handleEdit(user)}>Edit</button>
+                            <div>
+                                <h3>Upload Profile Image</h3>
+                                <input
+                                    type="file"
+                                    name="profileImage"
+                                    onChange={handleFileChange}
+                                />
+                                <button onClick={handleImageUpload}>Upload Image</button>
+                            </div>
                         </div>
                     )}
                    {showPopup && (
@@ -226,7 +268,7 @@ const Login = () => {
                         placeholder="Current Password"
                         value={formData.currentPassword}
                         onChange={handleChange}
-                        required
+                        required={!editMode}
                     />
                 </>
             )}
@@ -240,7 +282,6 @@ const Login = () => {
         </form>
     </div>
 )}
-
                     <button onClick={handleLogout}>Logout</button>
                 </div>
             )}
@@ -249,7 +290,6 @@ const Login = () => {
                     Already have an account? <a href="/signup">Signup</a>
                 </div>
             </div>
-        
     );
 };
 

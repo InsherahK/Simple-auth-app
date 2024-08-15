@@ -1,5 +1,7 @@
 const bcrypt = require('bcrypt');
 const userModel = require('../models/userModel');
+const User = require('../models/userModel');
+const upload = require('../middlewares/uploadMiddleware');
 
 const getAllUsers = (req, res) => {
     userModel.getAllUsers((err, results) => {
@@ -125,11 +127,62 @@ const deleteUser = (req, res) => {
     });
 };
 
+const updateProfile = (req, res) => {
+    upload.single('profileImage')(req, res, async (err) => {
+        if (err) {
+            return res.status(400).json({ message: 'Image upload failed', error: err });
+        }
+
+        const userId = req.user.userId;
+        const { username, email } = req.body;
+        const profileImage = req.file ? req.file.location : null;
+
+        const updateData = { username, email };
+        if (profileImage) {
+            updateData.profileImage = profileImage;
+        }
+
+        try {
+            await userModel.updateUser(userId, updateData);
+            const updatedUser = await userModel.getUserById(userId);
+            res.json(updatedUser);
+        } catch (error) {
+            res.status(500).json({ message: 'Profile update failed', error });
+        }
+    });
+};
+
+const uploadProfileImage = (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const userId = req.user.userId; // Use req.user.userId to access user ID
+    const profileImage = req.file.location;
+
+    // Update the user's profile with the new image URL
+    userModel.updateUser(userId, { profileImage }, (err) => {
+        if (err) {
+            return res.status(500).json({ message: 'Profile update failed', error: err });
+        }
+
+        userModel.getUserById(userId, (err, results) => {
+            if (err) {
+                return res.status(500).json({ message: 'Internal server error' });
+            }
+            res.status(200).json(results[0]);
+        });
+    });
+};
+
 module.exports = {
     getAllUsers,
     getUser,
     getUserById,
     updateUser,
     updateUserById,
-    deleteUser
+    deleteUser,
+    updateProfile,
+    uploadProfileImage 
 };
+
